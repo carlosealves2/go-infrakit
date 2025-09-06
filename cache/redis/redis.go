@@ -12,13 +12,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/carlosealves2/go-infrakit/cache"
+	"github.com/carlosealves2/go-infrakit/observability/logger"
 )
 
 // Cache is a Redis-backed implementation of cache.Cache.
 type Cache struct {
 	client  *goredis.Client
 	ns      string
-	logger  cache.Logger
+	logger  logger.Logger
 	tracer  trace.Tracer
 	counter metric.Int64Counter
 	latency metric.Float64Histogram
@@ -76,18 +77,13 @@ func mapError(err error) error {
 func (c *Cache) observe(ctx context.Context, op string, keyLen int, hit bool, start time.Time, err error) {
 	dur := time.Since(start)
 	if c.logger != nil {
-		fields := map[string]any{
-			"mod":      "cache",
-			"provider": "redis",
-			"op":       op,
-			"ns":       c.ns,
-			"key_len":  keyLen,
-			"dur_ms":   dur.Milliseconds(),
-		}
+		entry := c.logger.Info()
 		if err != nil {
-			fields["err"] = err
+			entry = c.logger.Error().With("err", err)
 		}
-		c.logger.Log(fields)
+		entry.With("mod", "cache").With("provider", "redis").With("op", op).
+			With("ns", c.ns).With("key_len", keyLen).With("dur_ms", dur.Milliseconds()).
+			Log("msg", "")
 	}
 	if c.tracer != nil {
 		_, span := c.tracer.Start(ctx, "cache."+op)

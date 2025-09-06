@@ -2,6 +2,8 @@ package cache
 
 import (
 	"errors"
+
+	"github.com/carlosealves2/go-infrakit/observability/logger"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -28,7 +30,7 @@ type Options struct {
 	TLS      bool
 
 	// Observability adapters
-	Logger Logger
+	Logger logger.Logger
 	Tracer trace.Tracer
 	Meter  metric.Meter
 }
