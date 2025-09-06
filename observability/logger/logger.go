@@ -1,8 +1,8 @@
 package logger
 
 import (
-	"fmt"
 	"io"
+	"time"
 
 	phuslog "github.com/phuslu/log"
 )
@@ -49,8 +49,15 @@ type Logger interface {
 
 // Entry accumulates fields for a log event.
 type Entry interface {
-	With(key string, val any) Entry
-	Log(key string, val any)
+	Str(key, val string) Entry
+	Int(key string, val int) Entry
+	Int64(key string, val int64) Entry
+	Float64(key string, val float64) Entry
+	Bool(key string, val bool) Entry
+	Dur(key string, val time.Duration) Entry
+	Time(key string, val time.Time) Entry
+	Err(err error) Entry
+	Msg(msg string)
 }
 
 // PhusluLogAdapter adapts github.com/phuslu/log.
@@ -70,23 +77,30 @@ func (p *phusluLogger) Error() Entry { return &phusluEntry{e: p.l.Error()} }
 
 type phusluEntry struct{ e *phuslog.Entry }
 
-func (e *phusluEntry) With(key string, val any) Entry {
-	switch v := val.(type) {
-	case string:
-		e.e = e.e.Str(key, v)
-	case int:
-		e.e = e.e.Int(key, v)
-	case int64:
-		e.e = e.e.Int64(key, v)
-	case error:
-		e.e = e.e.Err(v)
-	default:
-		e.e = e.e.Str(key, fmt.Sprint(v))
-	}
+func (e *phusluEntry) Str(key, val string) Entry { e.e = e.e.Str(key, val); return e }
+func (e *phusluEntry) Int(key string, val int) Entry {
+	e.e = e.e.Int(key, val)
 	return e
 }
-
-func (e *phusluEntry) Log(key string, val any) {
-	e.With(key, val)
-	e.e.Msg("")
+func (e *phusluEntry) Int64(key string, val int64) Entry {
+	e.e = e.e.Int64(key, val)
+	return e
 }
+func (e *phusluEntry) Float64(key string, val float64) Entry {
+	e.e = e.e.Float64(key, val)
+	return e
+}
+func (e *phusluEntry) Bool(key string, val bool) Entry {
+	e.e = e.e.Bool(key, val)
+	return e
+}
+func (e *phusluEntry) Dur(key string, val time.Duration) Entry {
+	e.e = e.e.Dur(key, val)
+	return e
+}
+func (e *phusluEntry) Time(key string, val time.Time) Entry {
+	e.e = e.e.Time(key, val)
+	return e
+}
+func (e *phusluEntry) Err(err error) Entry { e.e = e.e.Err(err); return e }
+func (e *phusluEntry) Msg(msg string)      { e.e.Msg(msg) }

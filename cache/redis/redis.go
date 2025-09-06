@@ -79,11 +79,15 @@ func (c *Cache) observe(ctx context.Context, op string, keyLen int, hit bool, st
 	if c.logger != nil {
 		entry := c.logger.Info()
 		if err != nil {
-			entry = c.logger.Error().With("err", err)
+			entry = c.logger.Error().Err(err)
 		}
-		entry.With("mod", "cache").With("provider", "redis").With("op", op).
-			With("ns", c.ns).With("key_len", keyLen).With("dur_ms", dur.Milliseconds()).
-			Log("msg", "")
+		entry.Str("mod", "cache").
+			Str("provider", "redis").
+			Str("op", op).
+			Str("ns", c.ns).
+			Int("key_len", keyLen).
+			Int64("dur_ms", dur.Milliseconds()).
+			Msg("")
 	}
 	if c.tracer != nil {
 		_, span := c.tracer.Start(ctx, "cache."+op)
