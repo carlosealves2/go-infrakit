@@ -1,26 +1,19 @@
 package redis
 
 import (
-	"context"
-	"testing"
-	"time"
+        "context"
+        "testing"
+        "time"
 
-	miniredis "github.com/alicebob/miniredis/v2"
-
-	"github.com/carlosealves2/go-infrakit/cache"
+        "github.com/carlosealves2/go-infrakit/cache"
 )
 
 func newTestCache(t *testing.T) cache.Cache {
-	mr, err := miniredis.Run()
-	if err != nil {
-		t.Fatalf("miniredis: %v", err)
-	}
-	t.Cleanup(mr.Close)
-	c, err := New(cache.Options{Addr: mr.Addr()})
-	if err != nil {
-		t.Fatalf("new redis: %v", err)
-	}
-	return c
+        c, err := New(cache.Options{})
+        if err != nil {
+                t.Fatalf("new redis: %v", err)
+        }
+        return c
 }
 
 func TestRedisCacheBasic(t *testing.T) {
@@ -46,38 +39,32 @@ func TestRedisCacheBasic(t *testing.T) {
 }
 
 func TestRedisCacheTTL(t *testing.T) {
-	ctx := context.Background()
-	mr, _ := miniredis.Run()
-	defer mr.Close()
-	c, err := New(cache.Options{Addr: mr.Addr()})
-	if err != nil {
-		t.Fatalf("new redis: %v", err)
-	}
-	if err := c.SetWithTTL(ctx, "foo", "bar", time.Second); err != nil {
-		t.Fatalf("set ttl: %v", err)
-	}
-	mr.FastForward(time.Second + time.Millisecond)
-	if _, err := c.Get(ctx, "foo"); err != cache.ErrNotFound {
-		t.Fatalf("expected expiration, got %v", err)
-	}
+        ctx := context.Background()
+        c := newTestCache(t)
+        if err := c.SetWithTTL(ctx, "foo", "bar", 50*time.Millisecond); err != nil {
+                t.Fatalf("set ttl: %v", err)
+        }
+        time.Sleep(60 * time.Millisecond)
+        if _, err := c.Get(ctx, "foo"); err != cache.ErrNotFound {
+                t.Fatalf("expected expiration, got %v", err)
+        }
 }
 
 func TestRedisNamespace(t *testing.T) {
-	ctx := context.Background()
-	mr, _ := miniredis.Run()
-	defer mr.Close()
-	base, err := New(cache.Options{Addr: mr.Addr()})
-	if err != nil {
-		t.Fatalf("new: %v", err)
-	}
-	c := cache.WithNamespace(base, "ns")
-	if err := c.Set(ctx, "foo", "bar"); err != nil {
-		t.Fatalf("set: %v", err)
-	}
-	if !mr.Exists("ns:foo") {
-		t.Fatalf("expected namespaced key in redis")
-	}
-	if mr.Exists("foo") {
-		t.Fatalf("unexpected plain key")
-	}
+        ctx := context.Background()
+        base, err := New(cache.Options{})
+        if err != nil {
+                t.Fatalf("new: %v", err)
+        }
+        c := cache.WithNamespace(base, "ns")
+        if err := c.Set(ctx, "foo", "bar"); err != nil {
+                t.Fatalf("set: %v", err)
+        }
+        if _, err := base.Get(ctx, "foo"); err != cache.ErrNotFound {
+                t.Fatalf("expected base miss, got %v", err)
+        }
+        v, err := base.Get(ctx, "ns:foo")
+        if err != nil || v != "bar" {
+                t.Fatalf("expected namespaced key, got %v %s", err, v)
+        }
 }
