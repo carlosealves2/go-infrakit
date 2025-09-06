@@ -2,7 +2,8 @@ package cache
 
 import (
 	"errors"
-	"github.com/phuslu/log"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Driver represents the cache backend driver
@@ -26,10 +27,10 @@ type Options struct {
 	Password string
 	TLS      bool
 
-	// Observability
-	Logger        *log.Logger
-	EnableMetrics bool
-	EnableTracing bool
+	// Observability adapters
+	Logger Logger
+	Tracer trace.Tracer
+	Meter  metric.Meter
 }
 
 var (
