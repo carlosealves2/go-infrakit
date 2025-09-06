@@ -10,7 +10,7 @@ import (
 
 func TestMemoryCacheBasic(t *testing.T) {
 	ctx := context.Background()
-	m := New()
+	m := New(cache.Options{})
 	if err := m.Set(ctx, "foo", "bar"); err != nil {
 		t.Fatalf("set: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestMemoryCacheBasic(t *testing.T) {
 
 func TestMemoryCacheTTL(t *testing.T) {
 	ctx := context.Background()
-	m := New()
+	m := New(cache.Options{})
 	if err := m.SetWithTTL(ctx, "foo", "bar", 50*time.Millisecond); err != nil {
 		t.Fatalf("set ttl: %v", err)
 	}
@@ -44,15 +44,14 @@ func TestMemoryCacheTTL(t *testing.T) {
 
 func TestMemoryNamespace(t *testing.T) {
 	ctx := context.Background()
-	base := New()
-	ns := cache.WithNamespace(base, "ns")
-	if err := ns.Set(ctx, "foo", "bar"); err != nil {
+	c := New(cache.Options{Namespace: "ns"})
+	if err := c.Set(ctx, "foo", "bar"); err != nil {
 		t.Fatalf("set: %v", err)
 	}
-	if _, err := base.Get(ctx, "foo"); err != cache.ErrNotFound {
-		t.Fatalf("prefix not applied")
+	if _, err := c.Get(ctx, "ns:foo"); err != cache.ErrNotFound {
+		t.Fatalf("should not require manual prefix")
 	}
-	if val, err := base.Get(ctx, "ns:foo"); err != nil || val != "bar" {
-		t.Fatalf("prefixed get failed: %v %s", err, val)
+	if val, err := c.Get(ctx, "foo"); err != nil || val != "bar" {
+		t.Fatalf("get failed: %v %s", err, val)
 	}
 }

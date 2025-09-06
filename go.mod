@@ -8,8 +8,8 @@ require (
 	go.opentelemetry.io/otel v0.0.0
 )
 
-replace github.com/phuslu/log => ./internal/phuslu/log
+replace github.com/phuslu/log => ./third_party/phuslu/log
 
-replace github.com/redis/go-redis/v9 => ./internal/redis
+replace github.com/redis/go-redis/v9 => ./third_party/redis
 
-replace go.opentelemetry.io/otel => ./internal/otel
+replace go.opentelemetry.io/otel => ./third_party/otel
